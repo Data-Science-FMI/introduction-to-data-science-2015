@@ -1,0 +1,24 @@
+---
+title: "Will you survive on Titanic"
+author: "Venelin Valkov"
+date: "October 4, 2015"
+output: html_document
+---
+
+Imagine yourself on Titanic. You heard the news - the ship is sinking! Will you survive to tell the story?
+
+## Background
+
+According to [Wikipedia](https://en.wikipedia.org/wiki/RMS_Titanic) the ship carried 2,224 passengers and crew. Titanic carried lifeboats for only 1,178 people. At 11:40 ship time she hit an iceberg. The disaster resulted in more than 1,500 lost lifes. During the evacuation "women and children first" policy was adopted.
+
+## The data
+
+The training and test data is provided by [Kaggle](https://www.kaggle.com/c/titanic) in csv format. [Description](https://www.kaggle.com/c/titanic/data) of the variables is also available. Let's load it into R and have a peek.
+
+```{r}
+train.df <- read.csv("data/train.csv", stringsAsFactors=FALSE, na.strings=c("NA", ""))
+dim(train.df)
+names(train.df)
+```
+
+891 rows and 12 columns in our training set. But who the passengers really are? Let's delve a bit deeper...
