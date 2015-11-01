@@ -116,4 +116,4 @@ sumpred <- function(cm) {
 m1 <- sumpred(cm1)
 m2 <- sumpred(cm2)
 model.cmp <- as.data.frame(rbind(m1, m2))
-rownames(model.cmp) <- c("Caret model 1", "Caret model 2")
+rownames(model.cmp) <- c("Naive Bayes model 1", "Naive Bayes model 2")
