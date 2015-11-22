@@ -76,7 +76,7 @@ for (i in c(1:15)) {
 
 corpus.stemmed <- tm_map(corpus.clean, content_transformer(stemDocument))
 
-# Analyze word frequencies
+## Analyze word frequencies
 
 corpus.tdm <- TermDocumentMatrix(corpus.stemmed, control = list(minWordLength = 1))
 inspect(corpus.tdm)
@@ -104,7 +104,7 @@ ggplot(top.terms[1:15,], aes(term, freq)) +
   ggtitle("Frequent words in tweets") +
   theme(plot.title = element_text(size=18, face="bold"))
 
-# Find word associations
+## Find word associations
 
 showAssociations <- function(corpus, association, dictionary, corlimit = 0.1, sep = ", ") {
   asocs <- findAssocs(corpus, association, corlimit)[[association]]
@@ -115,13 +115,13 @@ showAssociations(corpus.tdm, "smile", corpus.clean, corlimit = 0.12)
 showAssociations(corpus.tdm, "task", corpus.clean, corlimit = 0.10)
 showAssociations(corpus.tdm, "airport", corpus.clean)
 
-# Analyze hashtags
+## Analyze hashtags
 
 all.hashtags = unlist(str_extract_all(english.tweets$text, "#\\w+"))
 wordcloud(all.hashtags, max.words = 40, random.order = FALSE,
   colors = brewer.pal(6, "Dark2"), min.freq = 2)
 
-# Hierarchical clustering
+## Hierarchical clustering
 
 dense.tdm <- removeSparseTerms(corpus.tdm, sparse = 0.98)
 dense.tdm.matrix <- as.matrix(dense.tdm)
@@ -143,7 +143,7 @@ for (i in 1:k) {
   cat(names(s)[1:5], "\n")
 }
 
-# LDA topic modeling
+## LDA topic modeling
 
 corpus.dtm <- as.DocumentTermMatrix(dense.tdm)
 
