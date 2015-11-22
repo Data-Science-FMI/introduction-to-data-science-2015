@@ -1,6 +1,7 @@
 #install.packages("slam")
 #install.packages("SnowballC")
 #install.packages("topicmodels")
+#install.packages("textcat")
 library(tm)
 library(dplyr)
 library(doMC)
@@ -11,6 +12,7 @@ library(ggplot2)
 library(SnowballC)
 library(slam)
 library(topicmodels)
+library(textcat)
 
 registerDoMC()
 
@@ -18,11 +20,16 @@ df <- read.csv("data/tweets.csv", header = F, stringsAsFactors = F, encoding = "
 colnames(df) <- c("polarity", "tweet_id", "created_at", "query", "user", "text")
 head(df)
 
-random.tweets <- df[sample(nrow(df), 50000, replace=FALSE),]
+random.tweets <- df[sample(nrow(df), 20000, replace=FALSE),]
 
-head(random.tweets)
+random.tweets$language <- textcat(iconv(enc2utf8(random.tweets$text), sub = "byte"))
+random.tweets$language[is.na(random.tweets$language)] <- "english"
 
-ggplot(data=random.tweets, aes(x=factor(polarity, labels = c("negative", "positive")))) + 
+english.tweets <- random.tweets[random.tweets$language == "english", ]
+
+head(english.tweets)
+
+ggplot(data=english.tweets, aes(x=factor(polarity, labels = c("negative", "positive")))) + 
     geom_bar(binwidth=1, fill="#2196F3") + 
     labs(x="emotion", y="number of tweets") +
     ggtitle("General distribution of tweet sentiment") +
@@ -49,14 +56,14 @@ comparison.cloud(tdm, colors = c("#F44336","#4CAF50"), max.words = 200,
 
 ## Preprocessing
 
-corpus <- Corpus(VectorSource(random.tweets$text))
+corpus <- Corpus(VectorSource(english.tweets$text))
 
 corpus.clean <- corpus %>%
   tm_map(content_transformer(function(x) iconv(enc2utf8(x), sub = "byte"))) %>%
   tm_map(content_transformer(tolower)) %>%
   tm_map(content_transformer(function(x) gsub("http[^[:space:]]*", "", x))) %>%
   tm_map(removeNumbers) %>%
-  tm_map(removeWords, c(stopwords(kind = "en"), "via", "available", "rt", "cc", "just")) %>%
+  tm_map(removeWords, c(stopwords(kind = "en"), stopwords(kind = "smart"), "via", "available", "rt", "cc", "just")) %>%
   tm_map(removePunctuation) %>%
   tm_map(stripWhitespace)
  
@@ -77,7 +84,7 @@ findFreqTerms(corpus.tdm, lowfreq = 1000)
 corpus.freq <- row_sums(corpus.tdm, na.rm = T)
 df.freq <- data.frame(term = names(corpus.freq), freq = corpus.freq)
 
-ggplot(subset(df.freq, freq > 1500), aes(term, freq)) + 
+ggplot(subset(df.freq, freq > 3000), aes(term, freq)) + 
   geom_bar(stat = "identity", fill="#2196F3") +
   labs(x="term", y="frequency") +
   ggtitle("Frequent terms in tweets") +
@@ -105,13 +112,13 @@ showAssociations <- function(corpus, association, dictionary, corlimit = 0.1, se
 }
 
 showAssociations(corpus.tdm, "smile", corpus.clean, corlimit = 0.12)
-showAssociations(corpus.tdm, "todo", corpus.clean, corlimit = 0.15)
+showAssociations(corpus.tdm, "task", corpus.clean, corlimit = 0.10)
 showAssociations(corpus.tdm, "airport", corpus.clean)
 
 # Analyze hashtags
 
-all.hashtags = unlist(str_extract_all(random.tweets$text, "#\\w+"))
-wordcloud(all.hashtags, max.words = 30, random.order = FALSE,
+all.hashtags = unlist(str_extract_all(english.tweets$text, "#\\w+"))
+wordcloud(all.hashtags, max.words = 40, random.order = FALSE,
   colors = brewer.pal(6, "Dark2"), min.freq = 2)
 
 # Hierarchical clustering
@@ -141,5 +148,5 @@ for (i in 1:k) {
 corpus.dtm <- as.DocumentTermMatrix(dense.tdm)
 
 corpus.dtm.new <- corpus.dtm[row_sums(corpus.dtm) > 0, ]
-lda <- LDA(corpus.dtm.new, k = 10)
-(topics <- terms(lda, 5))
+lda <- LDA(corpus.dtm.new, k = 5)
+(topics <- terms(lda, 3))
