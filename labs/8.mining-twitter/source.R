@@ -1,15 +1,16 @@
 #install.packages("slam")
 #install.packages("SnowballC")
+#install.packages("topicmodels")
 library(tm)
 library(dplyr)
 library(doMC)
 library(stringr)
-
 library(RColorBrewer)
 library(wordcloud)
 library(ggplot2)
 library(SnowballC)
 library(slam)
+library(topicmodels)
 
 registerDoMC()
 
@@ -26,7 +27,7 @@ ggplot(data=random.tweets, aes(x=factor(polarity, labels = c("negative", "positi
     labs(x="emotion", y="number of tweets") +
     ggtitle("General distribution of tweet sentiment") +
     theme(plot.title = element_text(size=18, face="bold"))  
-  
+
 emos = levels(factor(random.tweets$polarity))
 nemo = length(emos)
 emo.docs = rep("", nemo)
@@ -68,6 +69,8 @@ for (i in c(1:15)) {
 
 corpus.stemmed <- tm_map(corpus.clean, content_transformer(stemDocument))
 
+# Analyze word frequencies
+
 corpus.tdm <- TermDocumentMatrix(corpus.stemmed, control = list(minWordLength = 1))
 inspect(corpus.tdm)
 findFreqTerms(corpus.tdm, lowfreq = 1000)
@@ -86,6 +89,8 @@ top.terms <- data.frame(term = stemCompletion(names(sort(row_sums(corpus.tdm), d
 
 ggplot(top.terms[1:15,], aes(term, freq)) + geom_bar(stat = "identity", fill="#2196F3")
 
+# Find word associations
+
 showAssociations <- function(corpus, association, dictionary, corlimit = 0.1, sep = ", ") {
   asocs <- findAssocs(corpus, association, corlimit)[[association]]
   cat(stemCompletion(names(sort(asocs)), dictionary = dictionary), sep = sep)
@@ -95,9 +100,13 @@ showAssociations(corpus.tdm, "smile", corpus.clean, corlimit = 0.12)
 showAssociations(corpus.tdm, "todo", corpus.clean, corlimit = 0.15)
 showAssociations(corpus.tdm, "airport", corpus.clean)
 
+# Analyze hashtags
+
 all.hashtags = unlist(str_extract_all(random.tweets$text, "#\\w+"))
 wordcloud(all.hashtags, max.words = 30, random.order = FALSE,
   colors = brewer.pal(6, "Dark2"), min.freq = 2)
+
+# Hierarchical clustering
 
 dense.tdm <- removeSparseTerms(corpus.tdm, sparse = 0.98)
 dense.tdm.matrix <- as.matrix(dense.tdm)
@@ -119,8 +128,10 @@ for (i in 1:k) {
   cat(names(s)[1:5], "\n")
 }
 
+# LDA topic modeling
+
 corpus.dtm <- as.DocumentTermMatrix(dense.tdm)
-library(topicmodels)
+
 corpus.dtm.new <- corpus.dtm[row_sums(corpus.dtm) > 0, ]
 lda <- LDA(corpus.dtm.new, k = 10)
 (topics <- terms(lda, 5))
