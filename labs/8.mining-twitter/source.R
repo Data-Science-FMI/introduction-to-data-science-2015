@@ -77,8 +77,12 @@ findFreqTerms(corpus.tdm, lowfreq = 1000)
 corpus.freq <- row_sums(corpus.tdm, na.rm = T)
 df.freq <- data.frame(term = names(corpus.freq), freq = corpus.freq)
 
-ggplot(subset(df.freq, freq > 1500), aes(term, freq)) + geom_bar(stat = "identity", fill="#2196F3")
-
+ggplot(subset(df.freq, freq > 1500), aes(term, freq)) + 
+  geom_bar(stat = "identity", fill="#2196F3") +
+  labs(x="term", y="frequency") +
+  ggtitle("Frequent terms in tweets") +
+  theme(plot.title = element_text(size=18, face="bold"))
+  
 wordcloud(
   corpus.stemmed, max.words = 40, random.order = FALSE,
   colors = brewer.pal(6, "Dark2")
@@ -87,7 +91,11 @@ wordcloud(
 top.terms <- data.frame(term = stemCompletion(names(sort(row_sums(corpus.tdm), decreasing=T)[1:150]), corpus.clean),
                         freq = sort(row_sums(corpus.tdm), decreasing=T)[1:150], stringsAsFactors=F)
 
-ggplot(top.terms[1:15,], aes(term, freq)) + geom_bar(stat = "identity", fill="#2196F3")
+ggplot(top.terms[1:15,], aes(term, freq)) + 
+  geom_bar(stat = "identity", fill="#2196F3") +
+  labs(x="word", y="frequency") +
+  ggtitle("Frequent words in tweets") +
+  theme(plot.title = element_text(size=18, face="bold"))
 
 # Find word associations
 
