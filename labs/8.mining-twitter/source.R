@@ -26,6 +26,7 @@ random.tweets$language <- textcat(iconv(enc2utf8(random.tweets$text), sub = "byt
 random.tweets$language[is.na(random.tweets$language)] <- "english"
 
 english.tweets <- random.tweets[random.tweets$language == "english", ]
+english.tweets$text = iconv(enc2utf8(english.tweets$text), sub = "byte")
 
 head(english.tweets)
 
@@ -33,39 +34,40 @@ ggplot(data=english.tweets, aes(x=factor(polarity, labels = c("negative", "posit
     geom_bar(binwidth=1, fill="#2196F3") + 
     labs(x="emotion", y="number of tweets") +
     ggtitle("General distribution of tweet sentiment") +
-    theme(plot.title = element_text(size=18, face="bold"))  
-
-emos = levels(factor(random.tweets$polarity))
-nemo = length(emos)
-emo.docs = rep("", nemo)
-for (i in 1:nemo)
-{
-  tmp = random.tweets[random.tweets$polarity == emos[i],]$text
-  emo.docs[i] = paste(tmp, collapse=" ")
-}
-
-emo.docs <- iconv(enc2utf8(emo.docs), sub = "byte")
-emo.docs = removeWords(emo.docs, stopwords("english"))
-corpus = Corpus(VectorSource(emo.docs))
-tdm = TermDocumentMatrix(corpus)
-tdm = as.matrix(tdm)
-colnames(tdm) = c("negative", "positive")
-
-comparison.cloud(tdm, colors = c("#F44336","#4CAF50"), max.words = 200,
-                 scale = c(3,.5), random.order = FALSE, title.size = 1.5)
+    theme(plot.title = element_text(size=18, face="bold"))
 
 ## Preprocessing
 
-corpus <- Corpus(VectorSource(english.tweets$text))
+createCorpus <- function(text) {
+  corpus <- Corpus(VectorSource(text))
+  corpus.clean <- corpus %>%
+    tm_map(content_transformer(tolower)) %>%
+    tm_map(content_transformer(function(x) gsub("http[^[:space:]]*", "", x))) %>%
+    tm_map(removeNumbers) %>%
+    tm_map(removeWords, c(stopwords(kind = "en"), stopwords(kind = "smart"), "via", "available", "rt", "cc", "just")) %>%
+    tm_map(removePunctuation) %>%
+    tm_map(stripWhitespace)
+  return(corpus.clean)
+}
 
-corpus.clean <- corpus %>%
-  tm_map(content_transformer(function(x) iconv(enc2utf8(x), sub = "byte"))) %>%
-  tm_map(content_transformer(tolower)) %>%
-  tm_map(content_transformer(function(x) gsub("http[^[:space:]]*", "", x))) %>%
-  tm_map(removeNumbers) %>%
-  tm_map(removeWords, c(stopwords(kind = "en"), stopwords(kind = "smart"), "via", "available", "rt", "cc", "just")) %>%
-  tm_map(removePunctuation) %>%
-  tm_map(stripWhitespace)
+polarities = levels(factor(english.tweets$polarity))
+polarities.count = length(polarities)
+documents = rep("", polarities.count)
+
+for (i in 1:polarities.count)
+{
+  text = english.tweets[english.tweets$polarity == polarities[i],]$text
+  documents[i] = paste(text, collapse=" ")
+}
+
+documents = removeWords(documents, stopwords("english"))
+doc.corpus = Corpus(VectorSource(documents))
+doc.tdm = as.matrix(TermDocumentMatrix(doc.corpus))
+colnames(doc.tdm) <- c("negative", "positive")
+
+corpus.clean <- createCorpus(english.tweets$text)
+
+corpus.stemmed <- tm_map(corpus.clean, content_transformer(stemDocument))
  
 ## Check tweets after processing
 
@@ -74,7 +76,8 @@ for (i in c(1:15)) {
   writeLines(strwrap(as.character(corpus.clean[[i]]), 80)) 
 }
 
-corpus.stemmed <- tm_map(corpus.clean, content_transformer(stemDocument))
+comparison.cloud(doc.tdm, colors = c("#F44336","#4CAF50"), max.words = 200,
+                 scale = c(3,.5), random.order = FALSE, title.size = 1.5)
 
 ## Analyze word frequencies
 
